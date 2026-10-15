@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdfx"
+version = "0.1.0"
+description = "Cross-platform desktop PDF toolkit"
+requires-python = ">=3.10"
+dependencies = ["pypdf>=5", "reportlab>=4", "PySide6-Essentials>=6.8", "pypdfium2>=4", "python-pptx>=1"]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.gui-scripts]
+pdfx = "pdfx.gui.app:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pdfx = ["*.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

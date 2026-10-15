@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tests and tooling caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Packaging output (PyInstaller, AppImage, Inno Setup)
+build/
+dist/
+AppDir/
+*.AppImage
+appimagetool*
+Output/
+*.exe
+*.msi
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tool settings and scratch files
+.claude/
+.taste-skill/
+*.log
