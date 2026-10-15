@@ -1,0 +1,5 @@
+# Scripts must keep their line endings whatever git does on the machine that checks them out:
+# a CRLF in install.sh breaks bash, and .bat files want CRLF.
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf

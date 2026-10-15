@@ -21,7 +21,7 @@ dev = ["pytest"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-pdfx = ["*.png"]
+pdfx = ["*.png", "*.ico"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

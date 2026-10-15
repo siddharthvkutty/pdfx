@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QRectF, Qt, Signal
+from PySide6.QtCore import QRectF, QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QFrame, QGraphicsOpacityEffect, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QPushButton, QSizePolicy, QStackedWidget,
@@ -214,6 +214,9 @@ class Window(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("pdfX")
+    if QStandardPaths.locate(QStandardPaths.StandardLocation.GenericDataLocation, "applications/pdfx.desktop"):
+        # Wayland matches the window to this launcher (taskbar icon). Only when it exists, or the desktop portal logs an error.
+        app.setDesktopFileName("pdfx")
     app.setWindowIcon(QIcon(str(ICON)))
     app.setStyle("Fusion")
     app.styleHints().setColorScheme(Qt.ColorScheme.Light)  # QSS sets every colour; keep native dialogs consistent

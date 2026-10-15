@@ -72,26 +72,46 @@ Turn a PDF into a `.pptx` in either of two modes:
 - **Drag and drop.** Drop files onto any tool, and drag pages or files to reorder them.
 - **Works from the keyboard too.** Press <kbd>Enter</kbd> on a page to pick it up, move it with the arrow keys (<kbd>Home</kbd> and <kbd>End</kbd> jump to the ends), and press <kbd>Enter</kbd> again to put it down.
 - **Start over in one click.** Every tool has a Reset button that clears it.
-- **Safe saves.** You can save over the file you opened. pdfX builds the new file in memory before writing it, so saving over the file you opened works.
+- **Save over your original.** pdfX builds the new file in memory before writing it, so saving over the file you opened works.
 - **Clear problems.** A password-protected, corrupt or missing file gives a plain message that says what's wrong.
 
 ## What it needs
 
 pdfX handles merging, reordering, splitting, watermarking and image-mode PDF to PowerPoint on its own. Two features use free tools that do the heavy lifting.
 
-| Feature | Needs |
-| --- | --- |
-| Compress | [Ghostscript](https://ghostscript.com/) |
-| PowerPoint to PDF | [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) |
-| PDF to PowerPoint, editable mode | [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) |
+| Feature | Needs | How you get it |
+| --- | --- | --- |
+| Compress | [Ghostscript](https://ghostscript.com/) | The installer downloads and installs it for you |
+| PowerPoint to PDF | [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) | Install it yourself |
+| PDF to PowerPoint, editable mode | [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) | Install it yourself |
 
 If LibreOffice isn't installed, the features that need it are greyed out. Clicking one shows a download link, and pdfX finds LibreOffice automatically once it's installed.
 
 ## Installation
 
-Installers for Windows and a portable AppImage for Linux are coming soon.
+You need **Python 3.10 or newer**. Download this repository (on GitHub, **Code → Download ZIP**, then extract it) or clone it, then run the installer for your system. It sets up pdfX in its own folder, so it won't touch your other Python projects, and adds a shortcut to your menu.
 
-<!-- TODO: add download and install steps once the executables are built. -->
+### Windows
+
+Double-click `scripts\install.bat`.
+
+It installs pdfX under `%LOCALAPPDATA%\pdfX`, downloads Ghostscript from Artifex and verifies its checksum (Windows will ask your permission to install it), and adds **pdfX** to the Start menu. Windows may show a one-time "Windows protected your PC" notice for a downloaded script. Choose **More info**, then **Run anyway**.
+
+To remove it, double-click `scripts\uninstall.bat`.
+
+### Linux
+
+```bash
+./scripts/install.sh
+```
+
+It installs pdfX under `~/.local/share/pdfx` and adds **pdfX** to your application menu. If Ghostscript is missing, it installs it with your package manager (apt, dnf, pacman or zypper), which asks for your `sudo` password. On Debian and Ubuntu it also installs `python3-venv` if needed.
+
+To remove it, run `./scripts/uninstall.sh`.
+
+### Updating
+
+Download or pull the latest version and run the installer again. It updates the existing install.
 
 ### Run from source
 
@@ -142,16 +162,13 @@ src/pdfx/
     tools.py     one page per tool
     widgets.py   thumbnail grid, page-sheet shape, background jobs
     theme.py     colours
+scripts/          installers and uninstallers for Windows and Linux
 tests/
 ```
 
 ## Built with
 
 [PySide6](https://doc.qt.io/qtforpython-6/) (Qt) for the interface, [pypdf](https://github.com/py-pdf/pypdf) for page operations, [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) for page previews, [ReportLab](https://www.reportlab.com/opensource/) for watermarks, [python-pptx](https://github.com/scanny/python-pptx) for slides, with [Ghostscript](https://ghostscript.com/) and [LibreOffice](https://www.libreoffice.org/) as optional helpers.
-
-## Status
-
-pdfX is developed and tested on Linux with Python 3.14. It is written to run on Windows as well, but Windows is not yet tested.
 
 ## License
 
