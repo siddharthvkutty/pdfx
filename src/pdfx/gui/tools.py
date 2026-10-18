@@ -491,4 +491,34 @@ class PdfToPptTool(PageTool):
             self.run(lambda: pdfx.pdf_to_ppt(self.src, out, editable=editable), self.saved)
 
 
-TOOLS = [MergeTool, OrganizeTool, SplitTool, WatermarkTool, CompressTool, PptTool, PdfToPptTool]
+class ImagesToPdfTool(Tool):
+    title, blurb, action = "Image to PDF", "Turn JPG, PNG and other images into one PDF.", "Create PDF"
+    multi, editable = True, True
+    drop = "Drop images here"
+    exts = "Images (*.jpg *.jpeg *.png *.gif *.bmp *.tif *.tiff *.webp)"
+    SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp"}
+
+    def build_options(self, layout):
+        self.info.setText(
+            "One page per image, in this order. Drag images to reorder them, or press Enter on one and use the "
+            "arrow keys (Enter again to drop). Select an image and press Delete to remove it."
+        )
+
+    def load(self, paths):
+        good = [p for p in paths if Path(p).suffix.lower() in self.SUFFIXES]
+        items = []
+        for p in good:
+            self.src = self.src or Path(p)
+            name = Path(p).name
+            items.append(self.grid.add(name if len(name) <= 22 else name[:19] + "…", str(p)))
+        self.grid.render_images(items, good)
+        if skipped := [Path(p).name for p in paths if p not in good]:
+            raise pdfx.PdfxError("Not a supported image: " + ", ".join(skipped))
+
+    def go(self):
+        files = self.grid.values()
+        if out := self.ask_save("images.pdf"):
+            self.run(lambda: pdfx.images_to_pdf(files, out), self.saved)
+
+
+TOOLS = [MergeTool, OrganizeTool, SplitTool, WatermarkTool, CompressTool, PptTool, PdfToPptTool, ImagesToPdfTool]

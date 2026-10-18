@@ -319,3 +319,49 @@ def test_libreoffice_path_none_when_missing(monkeypatch):
     monkeypatch.setattr(core.shutil, "which", lambda name: None)
     monkeypatch.setattr(core.sys, "platform", "linux")
     assert core.libreoffice_path() is None
+
+
+def _img(path, size, color="red", mode="RGB"):
+    from PIL import Image
+
+    Image.new(mode, size, color).save(path)
+    return str(path)
+
+
+def test_images_to_pdf_tool_end_to_end(qapp, tmp_path, monkeypatch):
+    out = tmp_path / "o.pdf"
+    wide = _img(tmp_path / "wide.jpg", (300, 100))
+    tall = _img(tmp_path / "tall.png", (100, 300), mode="RGBA", color=(0, 0, 255, 128))
+    sq = _img(tmp_path / "sq.webp", (200, 200))
+    t = tools.ImagesToPdfTool()
+    assert not t.button.isEnabled()
+    t.add_files([wide, tall, sq])
+    assert t.button.isEnabled() and t.grid.count() == 3
+
+    blank = t.grid.item(0).icon().pixmap(t.grid.iconSize()).toImage()
+    wait(lambda: all(t.grid.item(i).icon().pixmap(t.grid.iconSize()).toImage() != blank for i in range(3)))
+
+    t.grid.clearSelection()
+    t.grid.item(2).setSelected(True)
+    t.grid.move_selected(0)  # square image to the front
+    done = []
+    monkeypatch.setattr(t, "ask_save", lambda name, filt=None: str(out))
+    monkeypatch.setattr(t, "saved", lambda p, note="": done.append(p))
+    t.go()
+    wait(lambda: done)
+    sizes = [(round(p.mediabox.width), round(p.mediabox.height)) for p in PdfReader(out).pages]
+    assert sizes == [(96, 96), (144, 48), (48, 144)]  # sq, wide, tall at the assumed 150 dpi
+
+
+def test_images_to_pdf_tool_rejects_non_images_but_keeps_the_rest(qapp, pdf, tmp_path, monkeypatch):
+    warned = []
+    monkeypatch.setattr(tools.QMessageBox, "warning", lambda *a: warned.append(a[2]))
+    t = tools.ImagesToPdfTool()
+    t.add_files([_img(tmp_path / "ok.png", (10, 10)), str(pdf)])
+    assert t.grid.count() == 1 and warned and "a.pdf" in warned[0]
+
+
+def test_home_has_the_image_tool(qapp):
+    from pdfx.gui.app import Window
+
+    assert any(isinstance(tool, tools.ImagesToPdfTool) for tool, _ in Window().cards)

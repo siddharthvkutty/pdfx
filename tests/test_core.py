@@ -244,3 +244,75 @@ def test_pdf_to_ppt_editable_keeps_text(tmp_path):
 def test_pdf_to_ppt_bad_input(tmp_path):
     with pytest.raises(PdfxError):
         pdfx.pdf_to_ppt(tmp_path / "nope.pdf", tmp_path / "o.pptx")
+
+
+def _image(path, size=(60, 30), color=(200, 30, 30), **save):
+    from PIL import Image
+
+    Image.new("RGB", size, color).save(path, **save)
+    return path
+
+
+@pytest.mark.parametrize("name", ["a.jpg", "a.jpeg", "a.png", "a.gif", "a.bmp", "a.tif", "a.tiff", "a.webp"])
+def test_images_to_pdf_common_formats(tmp_path, name):
+    out = pdfx.images_to_pdf([_image(tmp_path / name)], tmp_path / "o.pdf")
+    assert len(PdfReader(out).pages) == 1
+
+
+def test_images_to_pdf_order_and_page_size_from_dpi(tmp_path):
+    first = _image(tmp_path / "a.png", (600, 300), dpi=(300, 300))  # 2 x 1 inch
+    second = _image(tmp_path / "b.png", (600, 300))  # no DPI: 150 assumed, 4 x 2 inches
+    out = pdfx.images_to_pdf([second, first], tmp_path / "o.pdf")
+    sizes = [(round(p.mediabox.width), round(p.mediabox.height)) for p in PdfReader(out).pages]  # PNG stores DPI as pixels per metre, so 300 reads back as 299.9994
+    assert sizes == [(288, 144), (144, 72)]
+
+
+def test_images_to_pdf_keeps_jpeg_bytes_compressed(tmp_path):
+    from PIL import Image
+
+    photo = tmp_path / "p.jpg"
+    Image.effect_noise((1200, 900), 80).convert("RGB").save(photo, quality=85)
+    out = pdfx.images_to_pdf([photo], tmp_path / "o.pdf")
+    assert PdfReader(out).pages[0].images[0].name.endswith(".jpg")
+    assert out.stat().st_size < photo.stat().st_size * 1.2  # embedded as-is, not re-encoded larger
+
+
+@pytest.mark.parametrize("orientation,rotate", [(1, 0), (3, 180), (6, 90), (8, 270)])
+def test_images_to_pdf_exif_rotation(tmp_path, orientation, rotate):
+    import pypdfium2 as pdfium
+    from PIL import Image
+
+    img = Image.new("RGB", (60, 30), (0, 0, 255))
+    exif = img.getexif()
+    exif[0x0112] = orientation
+    img.save(tmp_path / "p.jpg", exif=exif, dpi=(150, 150))
+    out = pdfx.images_to_pdf([tmp_path / "p.jpg"], tmp_path / "o.pdf")
+    page = PdfReader(out).pages[0]
+    assert (page.get("/Rotate") or 0) == rotate
+    assert (round(page.mediabox.width), round(page.mediabox.height)) == (29, 14)  # the box matches the stored pixels
+    shown = pdfium.PdfDocument(str(out))[0].render(scale=4).to_pil()
+    # displayed upright: 90/270 swap width and height; the image must fill the whole page, no cropping or blank strips
+    assert (shown.width > shown.height) == (rotate in (0, 180))
+    for corner in ((2, 2), (shown.width - 3, 2), (2, shown.height - 3), (shown.width - 3, shown.height - 3)):
+        assert shown.getpixel(corner)[2] > 200 and shown.getpixel(corner)[0] < 60
+
+
+def test_images_to_pdf_transparency_is_white_not_black(tmp_path):
+    import pypdfium2 as pdfium
+    from PIL import Image
+
+    Image.new("RGBA", (40, 40), (0, 0, 0, 0)).save(tmp_path / "clear.png")  # fully transparent
+    out = pdfx.images_to_pdf([tmp_path / "clear.png"], tmp_path / "o.pdf")
+    pixel = pdfium.PdfDocument(str(out))[0].render(scale=1).to_pil().getpixel((5, 5))
+    assert pixel[:3] == (255, 255, 255)
+
+
+def test_images_to_pdf_errors(tmp_path):
+    with pytest.raises(PdfxError, match="No images"):
+        pdfx.images_to_pdf([], tmp_path / "o.pdf")
+    bad = tmp_path / "x.png"
+    bad.write_text("not an image")
+    with pytest.raises(PdfxError, match="Cannot read image"):
+        pdfx.images_to_pdf([bad], tmp_path / "o.pdf")
+    with pytest.raises(PdfxError, match="Cannot read image"):
+        pdfx.images_to_pdf([tmp_path / "missing.jpg"], tmp_path / "o.pdf")

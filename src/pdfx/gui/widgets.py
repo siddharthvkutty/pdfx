@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pypdfium2 as pdfium
+from PIL import Image, ImageOps
 from PySide6.QtCore import QItemSelectionModel, QObject, QPoint, QRunnable, QSize, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
@@ -154,6 +155,33 @@ class Grid(QListWidget):
             finally:
                 with pdfium_lock:
                     pdf.close()
+
+        def show(k, img):
+            try:
+                items[k].setIcon(thumb_icon(QPixmap.fromImage(img)))
+            except RuntimeError:  # item was removed meanwhile
+                pass
+
+        run_async(work, progress=show, pool=_render_pool)
+
+    def render_images(self, items, paths):
+        """Fill items' icons with thumbnails of image files, in the background."""
+        gen, width = self._gen, int(THUMB.width() * self.devicePixelRatioF())
+
+        def work(emit):
+            for k, path in enumerate(paths):
+                if gen != self._gen:
+                    return
+                try:
+                    with Image.open(path) as img:
+                        img.draft("RGB", (width * 2, width * 2))  # lets JPEG decode at reduced size; no-op for other formats
+                        img = ImageOps.exif_transpose(img)
+                        img.thumbnail((width, width))
+                        page = Image.new("RGBA", img.size, "white")  # transparent PNGs show on white, as in the PDF
+                        page.alpha_composite(img.convert("RGBA"))
+                except Exception:
+                    continue  # unreadable files keep the blank thumbnail; converting reports the error
+                emit(k, QImage(page.tobytes(), page.width, page.height, QImage.Format.Format_RGBA8888).copy())
 
         def show(k, img):
             try:

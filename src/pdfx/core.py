@@ -16,9 +16,11 @@ import threading
 from pathlib import Path
 
 import pypdfium2 as pdfium
+from PIL import Image
 from pptx import Presentation
 from pptx.util import Emu
 from pypdf import PdfReader, PdfWriter
+from reportlab import rl_config
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -87,6 +89,55 @@ def merge(inputs: list[PathLike], output: PathLike) -> Path:
     for path in inputs:
         writer.append(_open(path))
     return _save(writer, output)
+
+
+MAX_PAGE_PT = 14400  # PDF viewers cope with pages up to 200 inches
+
+
+def _draw_images(c, inputs: list[PathLike]) -> None:
+    for path in inputs:
+        try:
+            img = Image.open(path)
+            w, h = img.size
+            dpi = float(img.info.get("dpi", (150,))[0] or 150)
+            if not 36 <= dpi <= 1200:
+                dpi = 150
+            rotate = {3: 180, 6: 90, 8: 270}.get(img.getexif().get(0x0112, 1), 0)  # shortcut: mirrored orientations (2, 4, 5, 7) are not flipped
+            if img.format == "JPEG" and img.mode in ("RGB", "L"):
+                source = ImageReader(str(path))
+            else:
+                alpha = img.mode in ("RGBA", "LA", "PA") or "transparency" in img.info
+                source = ImageReader(img.convert("RGBA" if alpha else "RGB"))  # shortcut: only the first frame of GIF/TIFF is used
+        except Exception as e:
+            raise PdfxError(f"Cannot read image {path}: {e}") from e
+        scale = min(72 / dpi, MAX_PAGE_PT / max(w, h))
+        # reportlab takes the size as displayed and stores the swapped box for 90/270, so swap to keep the box equal to the pixels
+        c.setPageSize((h * scale, w * scale) if rotate in (90, 270) else (w * scale, h * scale))
+        c.setPageRotation(rotate)
+        c.drawImage(source, 0, 0, w * scale, h * scale, mask="auto")
+        c.showPage()
+
+
+def images_to_pdf(inputs: list[PathLike], output: PathLike) -> Path:
+    """One page per image, in order. Each page is the image's physical size (its DPI, or 150 if it has none).
+
+    JPEGs are embedded untouched; other formats (PNG, GIF, BMP, TIFF, WebP...) are stored losslessly, with
+    transparency kept over white. EXIF rotation is applied through the page's /Rotate, so photos stay upright
+    without being re-encoded.
+    """
+    if not inputs:
+        raise PdfxError("No images selected")
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf)
+    ascii85, rl_config.useA85 = rl_config.useA85, 0  # ASCII85 would make embedded images 25% bigger
+    try:
+        _draw_images(c, inputs)
+    finally:
+        rl_config.useA85 = ascii85
+    c.save()
+    out = Path(output)
+    out.write_bytes(buf.getvalue())
+    return out
 
 
 def reorder(input: PathLike, order: list[int], output: PathLike) -> Path:
