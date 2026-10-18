@@ -135,7 +135,7 @@ class Window(QMainWindow):
         font = title.font()
         font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 97)
         title.setFont(font)
-        sub = QLabel("Merge, split, reorder, watermark, compress and convert. Everything runs on this computer.")
+        sub = QLabel("Merge, split, reorder, watermark, compress, convert and make PDFs from images. All on this computer.")
         sub.setObjectName("sub")
         sub.setWordWrap(True)
         words = QVBoxLayout()

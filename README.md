@@ -6,7 +6,7 @@
 
 **A desktop toolkit for everyday PDF jobs. Your files never leave your computer.**
 
-Merge, reorder, split, watermark, compress and convert PDFs with a visual page editor, on Windows and Linux.
+Merge, reorder, split, watermark, compress and convert PDFs, or build one from your images, with a visual page editor, on Windows and Linux.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-D8262D)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2B3540)
@@ -66,6 +66,14 @@ Turn a PDF into a `.pptx` in either of two modes:
 - **Editable:** text stays real text and shapes stay shapes, so you can keep working on the slides in PowerPoint. Complex layouts can shift, and scanned pages stay as pictures.
 - **Exact look:** each page becomes a full-slide picture. It looks identical to the PDF, but nothing is editable.
 
+### Image to PDF
+Turn photos, scans and screenshots into a single PDF. Add JPG, PNG, GIF, BMP, TIFF or WebP images by selecting or dropping them, drag them into order, and save. Each image becomes one page.
+- **Pages fit the image.** A page takes its size from the image's resolution, so a 300 dpi scan of a letter-size sheet comes out as a letter-size page. Images with no resolution stored get 150 dpi.
+- **Photos keep their quality.** JPEGs are embedded as they are, not recompressed, so the PDF is about the size of the originals. Other formats are stored losslessly, and transparent PNGs sit on a white page.
+- **Phone photos come out upright.** The rotation your camera recorded is respected.
+
+HEIC images (the iPhone default) aren't supported yet. For multi-page TIFFs and animated GIFs, only the first frame is used.
+
 ## Designed to be pleasant to use
 
 - **See your pages.** Real thumbnails rendered by PDFium, drawn in the background so large files don't freeze the window.
@@ -77,7 +85,7 @@ Turn a PDF into a `.pptx` in either of two modes:
 
 ## What it needs
 
-pdfX handles merging, reordering, splitting, watermarking and image-mode PDF to PowerPoint on its own. Two features use free tools that do the heavy lifting.
+pdfX handles merging, reordering, splitting, watermarking, image to PDF and image-mode PDF to PowerPoint on its own. Two features use free tools that do the heavy lifting.
 
 | Feature | Needs | How you get it |
 | --- | --- | --- |
@@ -141,6 +149,7 @@ pdfx.reorder("report.pdf", [4, 0, 1, 2, 3], "new-order.pdf")      # 0-based page
 pdfx.watermark_text("report.pdf", "CONFIDENTIAL", "marked.pdf", opacity=0.25)
 pdfx.compress("scan.pdf", "smaller.pdf", level="ebook")           # needs Ghostscript
 pdfx.pdf_to_ppt("report.pdf", "slides.pptx", editable=False)
+pdfx.images_to_pdf(["page1.jpg", "page2.png"], "scans.pdf")
 ```
 
 Problems with your input raise `pdfx.PdfxError`, with a message you can show to a user.
@@ -168,7 +177,7 @@ tests/
 
 ## Built with
 
-[PySide6](https://doc.qt.io/qtforpython-6/) (Qt) for the interface, [pypdf](https://github.com/py-pdf/pypdf) for page operations, [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) for page previews, [ReportLab](https://www.reportlab.com/opensource/) for watermarks, [python-pptx](https://github.com/scanny/python-pptx) for slides, with [Ghostscript](https://ghostscript.com/) and [LibreOffice](https://www.libreoffice.org/) as optional helpers.
+[PySide6](https://doc.qt.io/qtforpython-6/) (Qt) for the interface, [pypdf](https://github.com/py-pdf/pypdf) for page operations, [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) for page previews, [ReportLab](https://www.reportlab.com/opensource/) for watermarks and image pages, [Pillow](https://python-pillow.org/) for reading images, [python-pptx](https://github.com/scanny/python-pptx) for slides, with [Ghostscript](https://ghostscript.com/) and [LibreOffice](https://www.libreoffice.org/) as optional helpers.
 
 ## License
 
